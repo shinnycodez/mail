@@ -72,21 +72,21 @@ def compose(request):
     return JsonResponse({"message": "Email sent successfully."}, status=201)
 
 
-@login_required
-def mailbox(request, mailbox):
 
+def mailbox(request, mailbox):
+    test = User.objects.get(id=3)
     # Filter emails returned based on mailbox
     if mailbox == "inbox":
         emails = Email.objects.filter(
-            user=request.user, recipients=request.user, archived=False
+            user=test, recipients=test, archived=False
         )
     elif mailbox == "sent":
         emails = Email.objects.filter(
-            user=request.user, sender=request.user
+            user=test.user, sender=test
         )
     elif mailbox == "archive":
         emails = Email.objects.filter(
-            user=request.user, recipients=request.user, archived=True
+            user=test.user, recipients=test, archived=True
         )
     else:
         return JsonResponse({"error": "Invalid mailbox."}, status=400)
@@ -126,54 +126,59 @@ def email(request, email_id):
             "error": "GET or PUT request required."
         }, status=400)
 
-
+@csrf_exempt
 def login_view(request):
-    if request.method == "POST":
+    if request.method != "POST":
+        return JsonResponse({"error": "Post request required"}, status=400)
 
-        # Attempt to sign user in
-        email = request.POST["email"]
-        password = request.POST["password"]
-        user = authenticate(request, username=email, password=password)
+    data = json.loads(request.body)
 
-        # Check if authentication successful
-        if user is not None:
-            login(request, user)
-            return HttpResponseRedirect(reverse("index"))
-        else:
-            return render(request, "mail/login.html", {
-                "message": "Invalid email and/or password."
-            })
+    email = data.get("email", "")
+    password = data.get("password", "")
+
+    if len(email) <= 0:
+        return JsonResponse({"error": "email feild is null"}, status=400)
+    if len(password) <= 0:
+        return JsonResponse({"error": "password feild is null"}, status=400)
+
+    user = authenticate(request, username=email, password=password)
+
+    # Check if authentication successful
+    if user is not None:
+        login(request, user)
+        print("Logged In!")
+        return JsonResponse({"Success": "Logged in successfully!"}, status=200)
     else:
-        return render(request, "mail/login.html")
+        return JsonResponse({"error": "Failed to login!"}, status=400)
+
 
 
 def logout_view(request):
     logout(request)
     return HttpResponseRedirect(reverse("index"))
 
-
+@csrf_exempt
 def register(request):
-    if request.method == "POST":
-        email = request.POST["email"]
+    if request.method != "POST":
+        return JsonResponse({"error": "Post method required"}, status=400)
 
-        # Ensure password matches confirmation
-        password = request.POST["password"]
-        confirmation = request.POST["confirmation"]
-        if password != confirmation:
-            return render(request, "mail/register.html", {
-                "message": "Passwords must match."
-            })
+    data = json.loads(request.body)
+    email = data.get("email", "")
+    password = data.get("password", "")
 
-        # Attempt to create new user
-        try:
-            user = User.objects.create_user(email, email, password)
-            user.save()
-        except IntegrityError as e:
-            print(e)
-            return render(request, "mail/register.html", {
-                "message": "Email address already taken."
-            })
-        login(request, user)
-        return HttpResponseRedirect(reverse("index"))
-    else:
-        return render(request, "mail/register.html")
+    if len(email) <= 0:
+        return JsonResponse({"error": "email field is null"}, status=400)
+    if len(password) <= 0:
+        return JsonResponse({"error": "password field is null"}, status=400)
+
+    # Attempt to create new user
+    try:
+        user = User.objects.create_user(email, email, password)
+        user.save()
+    except IntegrityError as e:
+        print(e)
+
+        return JsonResponse({"error": "Failed to register"}, status=400)
+    login(request, user)
+    return JsonResponse({"success": "Successfully registered!"}, status=200)
+
