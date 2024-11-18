@@ -12,4 +12,5 @@ urlpatterns = [
     path("emails", views.compose, name="compose"),
     path("email/<int:email_id>", views.email, name="email"),
     path("emails/<str:mailbox>", views.mailbox, name="mailbox"),
+    path('accounts/google/login/callback/', views.GoogleLoginCallbackView.as_view(), name='google_login'), 
 ]

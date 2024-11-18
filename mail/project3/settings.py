@@ -33,18 +33,28 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'mail',
     'corsheaders',
+    'rest_framework.authtoken',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'rest_framework',                    
+    'dj_rest_auth',
+    'dj_rest_auth.registration',       
+    'allauth',
+    'allauth.account',                 
+    'allauth.socialaccount',           
+    'allauth.socialaccount.providers.google'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -129,3 +139,26 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+
+SITE_ID = 2
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'METHOD': 'oauth2',
+        'CLIENT_ID': "197970054174-6e5nip1ejptua7qk29vjbrhr9suto4c4.apps.googleusercontent.com",
+        'CLIENT_SECRET': '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'
+    }
+}
+
+CORS_ALLOW_ALL_ORIGINS = True 

@@ -6,6 +6,19 @@ from django.http import JsonResponse
 from django.shortcuts import HttpResponse, HttpResponseRedirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from dj_rest_auth.registration.views import SocialLoginView
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import requests
+from django.contrib.auth import get_user_model
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+import requests
+from rest_framework.decorators import api_view
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, Email
 
@@ -125,31 +138,42 @@ def email(request, email_id):
         return JsonResponse({
             "error": "GET or PUT request required."
         }, status=400)
-
+    
 @csrf_exempt
 def login_view(request):
     if request.method != "POST":
-        return JsonResponse({"error": "Post request required"}, status=400)
+        return JsonResponse({"error": "POST request required"}, status=400)
 
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
 
     email = data.get("email", "")
     password = data.get("password", "")
 
-    if len(email) <= 0:
-        return JsonResponse({"error": "email feild is null"}, status=400)
-    if len(password) <= 0:
-        return JsonResponse({"error": "password feild is null"}, status=400)
+    if not email:
+        return JsonResponse({"error": "Email field is null"}, status=400)
+    if not password:
+        return JsonResponse({"error": "Password field is null"}, status=400)
 
     user = authenticate(request, username=email, password=password)
 
-    # Check if authentication successful
     if user is not None:
         login(request, user)
-        print("Logged In!")
-        return JsonResponse({"Success": "Logged in successfully!"}, status=200)
+        refresh = RefreshToken.for_user(user)
+        return JsonResponse({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "username": user.username,
+                "pfp": user.pfp.url if user.pfp else None,
+            }
+        }, status=200)
     else:
-        return JsonResponse({"error": "Failed to login!"}, status=400)
+        return JsonResponse({"error": "Failed to login"}, status=400)
 
 
 
@@ -165,6 +189,7 @@ def register(request):
     data = json.loads(request.body)
     email = data.get("email", "")
     password = data.get("password", "")
+    
 
     if len(email) <= 0:
         return JsonResponse({"error": "email field is null"}, status=400)
@@ -174,11 +199,72 @@ def register(request):
     # Attempt to create new user
     try:
         user = User.objects.create_user(email, email, password)
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
         user.save()
     except IntegrityError as e:
         print(e)
 
         return JsonResponse({"error": "Failed to register"}, status=400)
-    login(request, user)
-    return JsonResponse({"success": "Successfully registered!"}, status=200)
+    user
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
+    refresh = RefreshToken.for_user(user)
+    return JsonResponse({
+        "refresh": str(refresh),
+        "access": str(refresh.access_token),
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "pfp": user.pfp.url if user.pfp else None,
+        }
+    }, status=200)
+
+
+
+
+
+User = get_user_model()
+
+class GoogleLoginCallbackView(APIView):
+    def post(self, request):
+        token = request.data.get('token')
+        if not token:
+            return Response({'error': 'Token missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify the token with Google
+        google_verify_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+        response = requests.get(google_verify_url, headers={"Authorization": f"Bearer {token}"})
+        if response.status_code != 200:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_info = response.json()
+        
+        # Extract user info
+        email = user_info.get('email')
+        name = user_info.get('name')
+        pfp = user_info.get('picture')
+        
+        
+        if not email:
+            return Response({'error': 'Email not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if user exists or create a new one
+        user, created = User.objects.get_or_create(email=email, defaults={'username': name})
+        
+        if created:
+            user.pfp = pfp
+            user.save()
+
+        # Generate a JWT token for the user
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'pfp': user.pfp,
+            }
+        }, status=status.HTTP_200_OK)
