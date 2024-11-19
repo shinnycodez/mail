@@ -17,7 +17,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 import requests
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, Email
@@ -34,6 +35,8 @@ def index(request):
         return HttpResponseRedirect(reverse("login"))
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @csrf_exempt
 @login_required
 def compose(request):
@@ -64,6 +67,7 @@ def compose(request):
     # Get contents of email
     subject = data.get("subject", "")
     body = data.get("body", "")
+    file = data.get("file", "")
 
     # Create one email for each recipient, plus sender
     users = set()
@@ -75,7 +79,8 @@ def compose(request):
             sender=request.user,
             subject=subject,
             body=body,
-            read=user == request.user
+            file=file,
+            read=user == request.user,
         )
         email.save()
         for recipient in recipients:

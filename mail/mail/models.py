@@ -16,7 +16,9 @@ class Email(models.Model):
     subject = models.CharField(max_length=255)
     body = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    file = models.TextField(blank=True, null=True)
     read = models.BooleanField(default=False)
+    cc = models.BooleanField(default=False)
     archived = models.BooleanField(default=False)
 
     def serialize(self):
@@ -27,6 +29,8 @@ class Email(models.Model):
             "subject": self.subject,
             "body": self.body,
             "timestamp": self.timestamp.strftime("%b %d %Y, %I:%M %p"),
+            "file": self.file,
+            "cc": self.cc,
             "read": self.read,
             "archived": self.archived
         }
