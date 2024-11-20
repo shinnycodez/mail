@@ -18,7 +18,8 @@ class Email(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     file = models.TextField(blank=True, null=True)
     read = models.BooleanField(default=False)
-    cc = models.BooleanField(default=False)
+    cc = models.ManyToManyField("User", related_name="emails_received_cc")
+    bcc = models.ManyToManyField("User", related_name="emails_received_bcc")
     archived = models.BooleanField(default=False)
 
     def serialize(self):

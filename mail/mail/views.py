@@ -64,6 +64,35 @@ def compose(request):
                 "error": f"User with email {email} does not exist."
             }, status=400)
 
+    cc_emails = [cc_email.strip() for cc_email in data.get("cc").split(",")]
+    if cc_emails != [""]:
+        cc_recipients = []
+        for cc_email in cc_emails:
+            try:
+                user = User.objects.get(email=cc_email)
+                cc_recipients.append(user)
+            except User.DoesNotExist:
+                return JsonResponse({
+                    "error": f"User with email {cc_email} does not exist."
+                }, status=400)
+    else:
+        pass
+
+    bcc_emails = [bcc_email.strip() for bcc_email in data.get("bcc").split(",")]
+    if bcc_emails != [""]:
+        bcc_recipients = []
+        for bcc_email in bcc_emails:
+            try:
+                user = User.objects.get(email=bcc_email)
+                bcc_recipients.append(user)
+            except User.DoesNotExist:
+                return JsonResponse({
+                    "error": f"User with email {bcc_email} does not exist."
+                }, status=400)
+    else:
+        pass
+
+
     # Get contents of email
     subject = data.get("subject", "")
     body = data.get("body", "")
@@ -73,6 +102,8 @@ def compose(request):
     users = set()
     users.add(request.user)
     users.update(recipients)
+    users.update(cc_recipients)
+    users.update(bcc_recipients)
     for user in users:
         email = Email(
             user=user,
@@ -85,6 +116,14 @@ def compose(request):
         email.save()
         for recipient in recipients:
             email.recipients.add(recipient)
+        email.save()
+
+        for cc_recipient in cc_recipients:
+            email.cc.add(cc_recipient)
+        email.save()
+
+        for bcc_recipient in bcc_recipients:
+            email.bcc.add(bcc_recipient)
         email.save()
 
     return JsonResponse({"message": "Email sent successfully."}, status=201)
