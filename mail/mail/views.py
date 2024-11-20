@@ -102,8 +102,10 @@ def compose(request):
     users = set()
     users.add(request.user)
     users.update(recipients)
-    users.update(cc_recipients)
-    users.update(bcc_recipients)
+    if len(cc_recipients) > 0:
+        users.update(cc_recipients)
+    if len(bcc_recipients) > 0:
+        users.update(bcc_recipients)
     for user in users:
         email = Email(
             user=user,
@@ -117,14 +119,14 @@ def compose(request):
         for recipient in recipients:
             email.recipients.add(recipient)
         email.save()
-
-        for cc_recipient in cc_recipients:
-            email.cc.add(cc_recipient)
-        email.save()
-
-        for bcc_recipient in bcc_recipients:
-            email.bcc.add(bcc_recipient)
-        email.save()
+        if len(cc_recipients) > 0:
+            for cc_recipient in cc_recipients:
+                email.cc.add(cc_recipient)
+            email.save()
+        if len(bcc_recipients) > 0:
+            for bcc_recipient in bcc_recipients:
+                email.bcc.add(bcc_recipient)
+            email.save()
 
     return JsonResponse({"message": "Email sent successfully."}, status=201)
 
