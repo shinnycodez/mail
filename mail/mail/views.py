@@ -243,6 +243,13 @@ def register(request):
     if len(password) <= 0:
         return JsonResponse({"error": "password field is null"}, status=400)
 
+    try:
+        auth_user = User.objects.get(email=email)
+        if auth_user:
+            return JsonResponse({"error": "Email already exists"}, status=400)
+    except User.DoesNotExist:
+        pass        
+
     # Attempt to create new user
     try:
         user = User.objects.create_user(email, email, password)
