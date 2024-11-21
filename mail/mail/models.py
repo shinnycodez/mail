@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import json
 
 
 class User(AbstractUser):
@@ -23,15 +24,19 @@ class Email(models.Model):
     archived = models.BooleanField(default=False)
 
     def serialize(self):
+        
+
         return {
             "id": self.id,
             "sender": self.sender.email,
+            "pfp": self.sender.pfp,
             "recipients": [user.email for user in self.recipients.all()],
             "subject": self.subject,
             "body": self.body,
             "timestamp": self.timestamp.strftime("%b %d %Y, %I:%M %p"),
             "file": self.file,
-            "cc": self.cc,
+            "cc": [user.email for user in self.cc.all()],
+            "bcc": [user.email for user in self.bcc.all()],
             "read": self.read,
             "archived": self.archived
         }
