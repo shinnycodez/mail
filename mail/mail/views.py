@@ -65,8 +65,8 @@ def compose(request):
             }, status=400)
 
     cc_emails = [cc_email.strip() for cc_email in data.get("cc").split(",")]
+    cc_recipients = []
     if cc_emails != [""]:
-        cc_recipients = []
         for cc_email in cc_emails:
             try:
                 user = User.objects.get(email=cc_email)
@@ -79,8 +79,9 @@ def compose(request):
         pass
 
     bcc_emails = [bcc_email.strip() for bcc_email in data.get("bcc").split(",")]
+    
+    bcc_recipients = []
     if bcc_emails != [""]:
-        bcc_recipients = []
         for bcc_email in bcc_emails:
             try:
                 user = User.objects.get(email=bcc_email)
