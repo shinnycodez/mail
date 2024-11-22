@@ -48,6 +48,7 @@ def compose(request):
 
     # Check recipient emails
     data = json.loads(request.body)
+    print(data.get("recipients"))
     emails = [email.strip() for email in data.get("recipients").split(",")]
     if emails == [""]:
         return JsonResponse({
@@ -99,7 +100,7 @@ def compose(request):
     subject = data.get("subject", "")
     body = data.get("body", "")
     file = data.get("file", "")
-    print(file)
+
 
 
     # Create one email for each recipient, plus sender

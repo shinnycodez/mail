@@ -28,6 +28,7 @@ class Email(models.Model):
 
         return {
             "id": self.id,
+            "sender_username": self.sender.username,
             "sender": self.sender.email,
             "pfp": self.sender.pfp,
             "recipients": [user.email for user in self.recipients.all()],
