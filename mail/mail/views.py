@@ -253,9 +253,11 @@ def register(request):
     except User.DoesNotExist:
         pass        
 
+    username = email.split('@')[0]
+
     # Attempt to create new user
     try:
-        user = User.objects.create_user(email, email, password)
+        user = User.objects.create_user(username, email, password)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
         user.save()
     except IntegrityError as e:
@@ -308,10 +310,11 @@ class GoogleLoginCallbackView(APIView):
 
         # Check if user exists or create a new one
         user, created = User.objects.get_or_create(email=email, defaults={'username': name})
-        
-        if created:
-            user.pfp = pfp
-            user.save()
+        user.pfp = pfp
+        user.save()
+
+        request.user = user
+
 
         # Generate a JWT token for the user
         refresh = RefreshToken.for_user(user)
