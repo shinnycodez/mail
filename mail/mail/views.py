@@ -20,6 +20,8 @@ import requests
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Q
+
 
 from .models import User, Email
 
@@ -136,21 +138,24 @@ def compose(request):
     return JsonResponse({"message": "Email sent successfully."}, status=201)
 
 
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+@login_required
 def mailbox(request, mailbox):
-    test = User.objects.get(email="foo@example.com")
+    
     # Filter emails returned based on mailbox
+    print(request.user)
     if mailbox == "inbox":
-        emails = Email.objects.filter(
-            user=test, recipients=test, archived=False
-        )
+        emails = Email.objects.filter(user=request.user,archived=False).filter( Q(recipients=request.user) |Q(cc=request.user) |Q(bcc=request.user) )
+
     elif mailbox == "sent":
         emails = Email.objects.filter(
-            user=test.user, sender=test
+            user=request.user, sender=request.user
         )
     elif mailbox == "archive":
         emails = Email.objects.filter(
-            user=test.user, recipients=test, archived=True
+            user=request.user, recipients=request.user, archived=True
         )
     else:
         return JsonResponse({"error": "Invalid mailbox."}, status=400)
@@ -209,6 +214,7 @@ def login_view(request):
         return JsonResponse({"error": "Password field is null"}, status=400)
 
     user = authenticate(request, username=email, password=password)
+    request.user = user
 
     if user is not None:
         login(request, user)
@@ -265,8 +271,9 @@ def register(request):
         print(e)
 
         return JsonResponse({"error": "Failed to register"}, status=400)
-    user
+    
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    request.user = user
 
     refresh = RefreshToken.for_user(user)
     return JsonResponse({
@@ -315,6 +322,8 @@ class GoogleLoginCallbackView(APIView):
         user.save()
 
         request.user = user
+        print(user)
+        print(request.user)
 
 
         # Generate a JWT token for the user
