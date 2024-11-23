@@ -165,6 +165,8 @@ def mailbox(request, mailbox):
     return JsonResponse([email.serialize() for email in emails], safe=False)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 @csrf_exempt
 @login_required
 def email(request, email_id):
