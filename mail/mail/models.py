@@ -19,9 +19,10 @@ class Email(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     file = models.TextField(blank=True, null=True)
     read = models.BooleanField(default=False)
-    cc = models.ManyToManyField("User", related_name="emails_received_cc")
-    bcc = models.ManyToManyField("User", related_name="emails_received_bcc")
+    cc = models.ManyToManyField("User", related_name="emails_received_cc", null=True)
+    bcc = models.ManyToManyField("User", related_name="emails_received_bcc", null=True)
     archived = models.BooleanField(default=False)
+    parent_email = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='replies')
 
     def serialize(self):
         
@@ -41,3 +42,7 @@ class Email(models.Model):
             "read": self.read,
             "archived": self.archived
         }
+
+
+class Conversation(models.Model):
+    email = models.ManyToManyField("Email", related_name="replied_email")

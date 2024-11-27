@@ -35,27 +35,31 @@ def index(request):
     # Everyone else is prompted to sign in
     else:
         return HttpResponseRedirect(reverse("login"))
+    
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 @login_required
-def compose(request):
-
-    # Composing a new email must be via POST
+def EmailComposeView(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST request required."}, status=400)
-    
 
-    # Check recipient emails
     data = json.loads(request.body)
-    print(data.get("recipients"))
+    msg = compose(data, request.user)
+    return JsonResponse(msg)
+
+
+
+def compose(data, request_user):
+
+
     emails = [email.strip() for email in data.get("recipients").split(",")]
     if emails == [""]:
-        return JsonResponse({
+        return {
             "error": "At least one recipient required."
-        }, status=400)
+        }
 
     # Convert email addresses to users
     recipients = []
@@ -64,9 +68,9 @@ def compose(request):
             user = User.objects.get(email=email)
             recipients.append(user)
         except User.DoesNotExist:
-            return JsonResponse({
+            return {
                 "error": f"User with email {email} does not exist."
-            }, status=400)
+            }
 
     cc_emails = [cc_email.strip() for cc_email in data.get("cc").split(",")]
     cc_recipients = []
@@ -76,9 +80,9 @@ def compose(request):
                 user = User.objects.get(email=cc_email)
                 cc_recipients.append(user)
             except User.DoesNotExist:
-                return JsonResponse({
+                return {
                     "error": f"User with email {cc_email} does not exist."
-                }, status=400)
+                }
     else:
         pass
 
@@ -91,9 +95,9 @@ def compose(request):
                 user = User.objects.get(email=bcc_email)
                 bcc_recipients.append(user)
             except User.DoesNotExist:
-                return JsonResponse({
+                return {
                     "error": f"User with email {bcc_email} does not exist."
-                }, status=400)
+                }
     else:
         pass
 
@@ -102,12 +106,14 @@ def compose(request):
     subject = data.get("subject", "")
     body = data.get("body", "")
     file = data.get("file", "")
+    parent_email_id = data.get("parent_email", "")
+    parent_email = Email.objects.get(id=parent_email_id)
 
 
 
     # Create one email for each recipient, plus sender
     users = set()
-    users.add(request.user)
+    users.add(request_user)
     users.update(recipients)
     if len(cc_recipients) > 0:
         users.update(cc_recipients)
@@ -116,11 +122,12 @@ def compose(request):
     for user in users:
         email = Email(
             user=user,
-            sender=request.user,
+            sender=request_user,
             subject=subject,
             body=body,
             file=file,
-            read=user == request.user,
+            read=user == request_user,
+            parent_email=parent_email,
         )
         email.save()
         for recipient in recipients:
@@ -135,7 +142,7 @@ def compose(request):
                 email.bcc.add(bcc_recipient)
             email.save()
 
-    return JsonResponse({"message": "Email sent successfully."}, status=201)
+    return {"message": "Email sent successfully."}
 
 
 @api_view(['GET'])
@@ -147,15 +154,15 @@ def mailbox(request, mailbox):
     # Filter emails returned based on mailbox
     print(request.user)
     if mailbox == "inbox":
-        emails = Email.objects.filter(user=request.user,archived=False).filter( Q(recipients=request.user) |Q(cc=request.user) |Q(bcc=request.user) )
+        emails = Email.objects.filter(user=request.user,archived=False, parent_email__isnull=True).filter( Q(recipients=request.user) |Q(cc=request.user) |Q(bcc=request.user) )
 
     elif mailbox == "sent":
         emails = Email.objects.filter(
-            user=request.user, sender=request.user
+            user=request.user, sender=request.user, parent_email__isnull=True
         )
     elif mailbox == "archive":
         emails = Email.objects.filter(
-            user=request.user, recipients=request.user, archived=True
+            user=request.user, recipients=request.user, archived=True, parent_email__isnull=True
         )
     else:
         return JsonResponse({"error": "Invalid mailbox."}, status=400)
@@ -165,7 +172,7 @@ def mailbox(request, mailbox):
     return JsonResponse([email.serialize() for email in emails], safe=False)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 @login_required
@@ -179,11 +186,16 @@ def email(request, email_id):
 
     # Return email contents
     if request.method == "GET":
+        # replies_queryset = RepliedEmailsGet(email_id)
+        # parent_email = email.serialize()
+        # replies = [reply.serialize() for reply in replies_queryset]
         return JsonResponse(email.serialize())
 
     # Update whether email is read or should be archived
     elif request.method == "PUT":
+        print('PUT REQUEST ARCHIVE')
         data = json.loads(request.body)
+
         if data.get("read") is not None:
             email.read = data["read"]
         if data.get("archived") is not None:
@@ -340,3 +352,33 @@ class GoogleLoginCallbackView(APIView):
                 'pfp': user.pfp,
             }
         }, status=status.HTTP_200_OK)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+@login_required
+def ReplyToEmailView(request, emailId):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not Allowed"}, status=401)
+    
+    parent_email = Email.objects.filter(id=emailId).first()
+    if not parent_email:
+        return JsonResponse({'error': 'Email not found'}, status=404)
+    
+    data = json.loads(request.body)
+    data["parent_email"] = parent_email.id
+    msg = compose(data)
+    return JsonResponse(msg)
+
+
+
+
+def RepliedEmailsGet(emailId):
+    if not emailId:
+        return {
+            "error": "emailId required"
+            }
+    
+    replies = Email.objects.filter(parent_email=emailId)
+    return replies
