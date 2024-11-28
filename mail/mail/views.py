@@ -107,8 +107,11 @@ def compose(data, request_user):
     body = data.get("body", "")
     file = data.get("file", "")
     parent_email_id = data.get("parent_email", "")
-    parent_email = Email.objects.get(id=parent_email_id)
-
+    if parent_email_id is not '':
+        parent_email = Email.objects.get(id=parent_email_id)
+    else:
+        parent_email = None
+    
 
 
     # Create one email for each recipient, plus sender
@@ -127,7 +130,7 @@ def compose(data, request_user):
             body=body,
             file=file,
             read=user == request_user,
-            parent_email=parent_email,
+            parent_email=parent_email if parent_email else None,
         )
         email.save()
         for recipient in recipients:
@@ -186,10 +189,10 @@ def email(request, email_id):
 
     # Return email contents
     if request.method == "GET":
-        # replies_queryset = RepliedEmailsGet(email_id)
-        # parent_email = email.serialize()
-        # replies = [reply.serialize() for reply in replies_queryset]
-        return JsonResponse(email.serialize())
+        replies_queryset = RepliedEmailsGet(email_id)
+        parent_email = email.serialize()
+        replies = [reply.serialize() for reply in replies_queryset]
+        return JsonResponse({"email": parent_email, "replies": replies}, safe=False)
 
     # Update whether email is read or should be archived
     elif request.method == "PUT":
@@ -379,6 +382,9 @@ def RepliedEmailsGet(emailId):
         return {
             "error": "emailId required"
             }
-    
-    replies = Email.objects.filter(parent_email=emailId)
+    try:
+        email = Email.objects.get(id=emailId)
+    except Email.DoesNotExist:
+        return {"error": "Email does not exist!"}
+    replies = Email.objects.filter(parent_email=email)
     return replies
