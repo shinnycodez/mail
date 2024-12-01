@@ -22,8 +22,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
 
+from .utils import compose, SaveScheduledEmail
+from .models import User, Email, ScheduledEmail
 
-from .models import User, Email
 
 
 def index(request):
@@ -47,105 +48,17 @@ def EmailComposeView(request):
         return JsonResponse({"error": "POST request required."}, status=400)
 
     data = json.loads(request.body)
+
+    if data.get("scheduled_time"):
+        msg = SaveScheduledEmail(data, request.user)
+        return JsonResponse(msg)
+    
     msg = compose(data, request.user)
     return JsonResponse(msg)
 
 
 
-def compose(data, request_user):
 
-
-    emails = [email.strip() for email in data.get("recipients").split(",")]
-    if emails == [""]:
-        return {
-            "error": "At least one recipient required."
-        }
-
-    # Convert email addresses to users
-    recipients = []
-    for email in emails:
-        try:
-            user = User.objects.get(email=email)
-            recipients.append(user)
-        except User.DoesNotExist:
-            return {
-                "error": f"User with email {email} does not exist."
-            }
-
-    cc_emails = [cc_email.strip() for cc_email in data.get("cc").split(",")]
-    cc_recipients = []
-    if cc_emails != [""]:
-        for cc_email in cc_emails:
-            try:
-                user = User.objects.get(email=cc_email)
-                cc_recipients.append(user)
-            except User.DoesNotExist:
-                return {
-                    "error": f"User with email {cc_email} does not exist."
-                }
-    else:
-        pass
-
-    bcc_emails = [bcc_email.strip() for bcc_email in data.get("bcc").split(",")]
-    
-    bcc_recipients = []
-    if bcc_emails != [""]:
-        for bcc_email in bcc_emails:
-            try:
-                user = User.objects.get(email=bcc_email)
-                bcc_recipients.append(user)
-            except User.DoesNotExist:
-                return {
-                    "error": f"User with email {bcc_email} does not exist."
-                }
-    else:
-        pass
-
-
-    # Get contents of email
-    subject = data.get("subject", "")
-    body = data.get("body", "")
-    file = data.get("file", "")
-    parent_email_id = data.get("parent_email", "")
-    if parent_email_id is not '':
-        parent_email = Email.objects.get(id=parent_email_id)
-    else:
-        parent_email = None
-    
-
-
-    # Create one email for each recipient, plus sender
-    users = set()
-    users.add(request_user)
-    users.update(recipients)
-    if len(cc_recipients) > 0:
-        users.update(cc_recipients)
-    if len(bcc_recipients) > 0:
-        users.update(bcc_recipients)
-    for user in users:
-        email = Email(
-            user=user,
-            sender=request_user,
-            subject=subject,
-            body=body,
-            file=file,
-            read=user == request_user,
-            parent_email=parent_email if parent_email else None,
-        )
-        email.save()
-        for recipient in recipients:
-            email.recipients.add(recipient)
-        email.save()
-        if len(cc_recipients) > 0:
-            for cc_recipient in cc_recipients:
-                email.cc.add(cc_recipient)
-            email.save()
-        if len(bcc_recipients) > 0:
-            for bcc_recipient in bcc_recipients:
-                email.bcc.add(bcc_recipient)
-            email.save()
-
-    return {"message": "Email sent successfully."}
 
 
 @api_view(['GET'])
@@ -388,3 +301,8 @@ def RepliedEmailsGet(emailId):
         return {"error": "Email does not exist!"}
     replies = Email.objects.filter(parent_email=email)
     return replies
+
+
+
+
+

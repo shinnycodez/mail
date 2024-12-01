@@ -44,5 +44,16 @@ class Email(models.Model):
         }
 
 
-class Conversation(models.Model):
-    email = models.ManyToManyField("Email", related_name="replied_email")
+class ScheduledEmail(models.Model):
+    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="scheduled_emails")
+    sender = models.ForeignKey("User", on_delete=models.CASCADE, related_name="scheduled_emails_sent")
+    recipients = models.ManyToManyField("User", related_name="emails_to_be_sent_to")
+    subject = models.CharField(max_length=255)
+    body = models.TextField(blank=True)
+    file = models.TextField(blank=True, null=True)
+    read = models.BooleanField(default=False)
+    cc = models.ManyToManyField("User", related_name="emails_to_be_sent_to_cc", null=True)
+    bcc = models.ManyToManyField("User", related_name="emails_to_be_sent_to_bcc", null=True)
+    archived = models.BooleanField(default=False)
+    scheduled_time = models.DateTimeField()
+
