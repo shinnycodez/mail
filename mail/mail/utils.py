@@ -41,7 +41,7 @@ def scheduled_compose(data, request_user):
         except User.DoesNotExist:
             return "Receipent does not exists!"
         
-    cc_ids = [recipient['id'] for recipient in data['recipients']]
+    cc_ids = [recipient['id'] for recipient in data['cc']]
     cc_recipients = []
     if cc_ids != [""]:
         for cc_email in cc_ids:
@@ -55,7 +55,7 @@ def scheduled_compose(data, request_user):
     else:
         pass
 
-    bcc_ids = [recipient['id'] for recipient in data['recipients']]
+    bcc_ids = [recipient['id'] for recipient in data['bcc']]
     
     bcc_recipients = []
     if bcc_ids != [""]:
@@ -184,28 +184,27 @@ def SaveScheduledEmail(data, request_user):
         users.update(cc_recipients)
     if len(bcc_recipients) > 0:
         users.update(bcc_recipients)
-    for user in users:
-        email = ScheduledEmail(
-            user=user,
-            sender=request_user,
-            subject=subject,
-            body=body,
-            file=file,
-            read=user == request_user,
-            scheduled_time = scheduled_time,
-        )
+    
+    email = ScheduledEmail(
+        sender=request_user,
+        subject=subject,
+        body=body,
+        file=file,
+        read=user == request_user,
+        scheduled_time = scheduled_time,
+    )
+    email.save()
+    for recipient in recipients:
+        email.recipients.add(recipient)
+    email.save()
+    if len(cc_recipients) > 0:
+        for cc_recipient in cc_recipients:
+            email.cc.add(cc_recipient)
         email.save()
-        for recipient in recipients:
-            email.recipients.add(recipient)
+    if len(bcc_recipients) > 0:
+        for bcc_recipient in bcc_recipients:
+            email.bcc.add(bcc_recipient)
         email.save()
-        if len(cc_recipients) > 0:
-            for cc_recipient in cc_recipients:
-                email.cc.add(cc_recipient)
-            email.save()
-        if len(bcc_recipients) > 0:
-            for bcc_recipient in bcc_recipients:
-                email.bcc.add(bcc_recipient)
-            email.save()
 
     return {"message": "Email saved successfully."}
 

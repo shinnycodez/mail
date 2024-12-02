@@ -221,7 +221,7 @@ def register(request):
 
 
 
-User = get_user_model()
+
 
 class GoogleLoginCallbackView(APIView):
     def post(self, request):

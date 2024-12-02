@@ -45,7 +45,7 @@ class Email(models.Model):
 
 
 class ScheduledEmail(models.Model):
-    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="scheduled_emails")
+    # user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="scheduled_emails")
     sender = models.ForeignKey("User", on_delete=models.CASCADE, related_name="scheduled_emails_sent")
     recipients = models.ManyToManyField("User", related_name="emails_to_be_sent_to")
     subject = models.CharField(max_length=255)
