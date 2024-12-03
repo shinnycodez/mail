@@ -88,7 +88,7 @@ def mailbox(request, mailbox):
     return JsonResponse([email.serialize() for email in emails], safe=False)
 
 
-@api_view(['GET', 'PUT'])
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 @login_required
@@ -118,7 +118,11 @@ def email(request, email_id):
             email.archived = data["archived"]
         email.save()
         return HttpResponse(status=204)
-
+    elif request.method == 'DELETE' : 
+        email.delete()
+        return JsonResponse({
+            "success" : "Deleted successfully"
+        })
     # Email must be via GET or PUT
     else:
         return JsonResponse({
@@ -163,10 +167,13 @@ def login_view(request):
         return JsonResponse({"error": "Failed to login"}, status=400)
 
 
-
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+@login_required
 def logout_view(request):
     logout(request)
-    return HttpResponseRedirect(reverse("index"))
+    return JsonResponse({"success" : "successfully logged out"})
 
 @csrf_exempt
 def register(request):
