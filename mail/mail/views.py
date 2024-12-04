@@ -68,6 +68,8 @@ def mailbox(request, mailbox):
         emails = Email.objects.filter(
             user=request.user, recipients=request.user, archived=True, parent_email__isnull=True
         )
+    elif mailbox == "schedule":
+            emails = ScheduledEmail.objects.filter(sender=request.user)
     else:
         return JsonResponse({"error": "Invalid mailbox."}, status=400)
 
@@ -267,14 +269,8 @@ class GoogleLoginCallbackView(APIView):
     
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-@csrf_exempt
-@login_required
-def GetScheduledEmails(request):
-    emails = ScheduledEmail.objects.filter(sender=request.user)
-    
-    return JsonResponse([email.serialize() for email in emails], safe=False)
+
+
 
 
 

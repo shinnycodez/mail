@@ -18,5 +18,5 @@ urlpatterns = [
     path('accounts/google/login/callback/', views.GoogleLoginCallbackView.as_view(), name='google_login'), 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('scheduledEmails', views.GetScheduledEmails, name="Scheduled_emails")
+
 ]
