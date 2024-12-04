@@ -56,4 +56,22 @@ class ScheduledEmail(models.Model):
     bcc = models.ManyToManyField("User", related_name="emails_to_be_sent_to_bcc", null=True)
     archived = models.BooleanField(default=False)
     scheduled_time = models.DateTimeField()
+    def serialize(self):
+        
+
+        return {
+            "id": self.id,
+            "sender_username": self.sender.username,
+            "sender": self.sender.email,
+            "pfp": self.sender.pfp,
+            "recipients": [user.email for user in self.recipients.all()],
+            "subject": self.subject,
+            "body": self.body,
+            "timestamp": self.scheduled_time.strftime("%b %d %Y, %I:%M %p"),
+            "file": self.file,
+            "cc": [user.email for user in self.cc.all()],
+            "bcc": [user.email for user in self.bcc.all()],
+            "read": self.read,
+            "archived": self.archived
+        }
 

@@ -280,11 +280,11 @@ def Scheduled_email(request, email_id):
 
     
     try:
-        email = ScheduledEmail.objects.get(user=request.user, pk=email_id)
-    except Email.DoesNotExist:
+        email = ScheduledEmail.objects.get(sender=request.user, pk=email_id)
+    except ScheduledEmail.DoesNotExist:
         return JsonResponse({"error": "Email not found."}, status=404)
 
-    
+    print(email)
     if request.method == "GET":
         email = email.serialize()
         
