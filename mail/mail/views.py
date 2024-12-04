@@ -25,19 +25,7 @@ from django.db.models import Q
 from .utils import compose, SaveScheduledEmail
 from .models import User, Email, ScheduledEmail
 
-
-
-def index(request):
-
-    # Authenticated users view their inbox
-    if request.user.is_authenticated:
-        return render(request, "mail/inbox.html")
-
-    # Everyone else is prompted to sign in
-    else:
-        return HttpResponseRedirect(reverse("login"))
-    
-
+  
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -94,39 +82,40 @@ def mailbox(request, mailbox):
 @login_required
 def email(request, email_id):
 
-    # Query for requested email
+    
     try:
         email = Email.objects.get(user=request.user, pk=email_id)
     except Email.DoesNotExist:
         return JsonResponse({"error": "Email not found."}, status=404)
 
-    # Return email contents
+    
     if request.method == "GET":
-        replies_queryset = RepliedEmailsGet(email_id)
-        parent_email = email.serialize()
-        replies = [reply.serialize() for reply in replies_queryset]
-        return JsonResponse({"email": parent_email, "replies": replies}, safe=False)
+        email = email.serialize()
+        
+        return JsonResponse({"email": email}, safe=False)
 
-    # Update whether email is read or should be archived
+    
     elif request.method == "PUT":
-        print('PUT REQUEST ARCHIVE')
+    
         data = json.loads(request.body)
-
         if data.get("read") is not None:
             email.read = data["read"]
+
         if data.get("archived") is not None:
             email.archived = data["archived"]
         email.save()
         return HttpResponse(status=204)
+    
     elif request.method == 'DELETE' : 
         email.delete()
         return JsonResponse({
             "success" : "Deleted successfully"
         })
-    # Email must be via GET or PUT
+    
+    
     else:
         return JsonResponse({
-            "error": "GET or PUT request required."
+            "error": "GET or PUT or DELETE request required."
         }, status=400)
     
 @csrf_exempt
@@ -277,37 +266,18 @@ class GoogleLoginCallbackView(APIView):
         }, status=status.HTTP_200_OK)
     
 
-@api_view(['POST'])
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 @login_required
-def ReplyToEmailView(request, emailId):
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not Allowed"}, status=401)
+def GetScheduledEmails(request):
+    emails = ScheduledEmail.objects.filter(sender=request.user)
     
-    parent_email = Email.objects.filter(id=emailId).first()
-    if not parent_email:
-        return JsonResponse({'error': 'Email not found'}, status=404)
-    
-    data = json.loads(request.body)
-    data["parent_email"] = parent_email.id
-    msg = compose(data)
-    return JsonResponse(msg)
+    return JsonResponse([email.serialize() for email in emails], safe=False)
 
 
 
-
-def RepliedEmailsGet(emailId):
-    if not emailId:
-        return {
-            "error": "emailId required"
-            }
-    try:
-        email = Email.objects.get(id=emailId)
-    except Email.DoesNotExist:
-        return {"error": "Email does not exist!"}
-    replies = Email.objects.filter(parent_email=email)
-    return replies
 
 
 

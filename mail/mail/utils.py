@@ -300,23 +300,3 @@ def compose(data, request_user):
 
     return {"message": "Email sent successfully."}
 
-from django.utils.timezone import now
-def send_scheduled_emails(*args, **kwargs):
-    email_queryset = ScheduledEmail.objects.filter(scheduled_time__lte=now()).prefetch_related('recipients')
-    
-    emails = [
-        {
-            **email,
-            "recipients": list(ScheduledEmail.objects.get(id=email["id"]).recipients.values('id')),
-            "cc": list(ScheduledEmail.objects.get(id=email["id"]).cc.values('id')),
-            "bcc": list(ScheduledEmail.objects.get(id=email["id"]).bcc.values('id')),
-        }
-        for email in email_queryset.values()  # Add all required fields here
-    ]
-
-
-    for email in emails:
-
-        user = User.objects.get(id=email["sender_id"])
-        msg = scheduled_compose(email, user)
-        ScheduledEmail.objects.filter(id=email["id"]).delete()  # Ensure deletion by ID

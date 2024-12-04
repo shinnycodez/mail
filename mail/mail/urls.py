@@ -7,7 +7,6 @@ from rest_framework_simplejwt.views import (
 from . import views
 
 urlpatterns = [
-    path("", views.index, name="index"),
     path("login", views.login_view, name="login"),
     path("logout", views.logout_view, name="logout"),
     path("register", views.register, name="register"),
@@ -19,4 +18,5 @@ urlpatterns = [
     path('accounts/google/login/callback/', views.GoogleLoginCallbackView.as_view(), name='google_login'), 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('scheduledEmails', views.GetScheduledEmails, name="Scheduled_emails")
 ]
