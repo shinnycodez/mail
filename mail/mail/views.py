@@ -70,6 +70,8 @@ def mailbox(request, mailbox):
         )
     elif mailbox == "schedule":
             emails = ScheduledEmail.objects.filter(sender=request.user)
+            emails.order_by("-scheduled_time").all()
+            return JsonResponse([email.serialize() for email in emails], safe=False)
     else:
         return JsonResponse({"error": "Invalid mailbox."}, status=400)
 
@@ -270,7 +272,36 @@ class GoogleLoginCallbackView(APIView):
 
 
 
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+@login_required
+def Scheduled_email(request, email_id):
 
+    
+    try:
+        email = ScheduledEmail.objects.get(user=request.user, pk=email_id)
+    except Email.DoesNotExist:
+        return JsonResponse({"error": "Email not found."}, status=404)
+
+    
+    if request.method == "GET":
+        email = email.serialize()
+        
+        return JsonResponse({"email": email}, safe=False)
+
+    
+    elif request.method == 'DELETE' : 
+        email.delete()
+        return JsonResponse({
+            "success" : "Deleted successfully"
+        })
+    
+  
+    else:
+        return JsonResponse({
+            "error": "GET or PUT or DELETE request required."
+        }, status=400)
 
 
 
