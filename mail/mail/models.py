@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-import json
+from django.utils.timezone import localtime
+
 
 
 class User(AbstractUser):
@@ -16,7 +17,7 @@ class Email(models.Model):
     recipients = models.ManyToManyField("User", related_name="emails_received")
     subject = models.CharField(max_length=255)
     body = models.TextField(blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField()
     file = models.TextField(blank=True, null=True)
     read = models.BooleanField(default=False)
     cc = models.ManyToManyField("User", related_name="emails_received_cc", null=True)
@@ -35,7 +36,7 @@ class Email(models.Model):
             "recipients": [user.email for user in self.recipients.all()],
             "subject": self.subject,
             "body": self.body,
-            "timestamp": self.timestamp.strftime("%b %d %Y, %I:%M %p"),
+            "timestamp": localtime(self.timestamp).strftime("%b %d %Y, %I:%M %p"),
             "file": self.file,
             "cc": [user.email for user in self.cc.all()],
             "bcc": [user.email for user in self.bcc.all()],

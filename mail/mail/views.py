@@ -69,9 +69,9 @@ def mailbox(request, mailbox):
             user=request.user, recipients=request.user, archived=True, parent_email__isnull=True
         )
     elif mailbox == "schedule":
-            emails = ScheduledEmail.objects.filter(sender=request.user)
-            emails.order_by("-scheduled_time").all()
-            return JsonResponse([email.serialize() for email in emails], safe=False)
+        emails = ScheduledEmail.objects.filter(sender=request.user)
+        emails.order_by("-scheduled_time").all()
+        return JsonResponse([email.serialize() for email in emails], safe=False)
     else:
         return JsonResponse({"error": "Invalid mailbox."}, status=400)
 
@@ -302,11 +302,3 @@ def Scheduled_email(request, email_id):
         return JsonResponse({
             "error": "GET or PUT or DELETE request required."
         }, status=400)
-
-
-
-
-
-
-
-

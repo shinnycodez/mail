@@ -21,6 +21,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
+from django.utils import timezone
+from pytz import timezone as pytz_timezone
 
 
 
@@ -75,7 +77,11 @@ def scheduled_compose(data, request_user):
     subject = data["subject"]
     body = data["body"]
     file = data["file"]
+    tz = pytz_timezone('Asia/Karachi')
+    timezone.activate(tz)
 
+    # Example: Get the current time in the selected timezone
+    timestamp = timezone.localtime(timezone.now())
 
     
 
@@ -96,7 +102,7 @@ def scheduled_compose(data, request_user):
             body=body,
             file=file,
             read=user == request_user,
-
+            timestamp=timestamp,
         )
         email.save()
         for recipient in recipients:
@@ -264,7 +270,12 @@ def compose(data, request_user):
     subject = data.get("subject", "")
     body = data.get("body", "")
     file = data.get("file", "")
-    
+    tz = pytz_timezone('Asia/Karachi')
+    timezone.activate(tz)
+
+    # Example: Get the current time in the selected timezone
+    timestamp = timezone.localtime(timezone.now())
+    print(timestamp)
 
 
     # Create one email for each recipient, plus sender
@@ -283,7 +294,7 @@ def compose(data, request_user):
             body=body,
             file=file,
             read=user == request_user,
-
+            timestamp=timestamp,
         )
         email.save()
         for recipient in recipients:
@@ -299,4 +310,3 @@ def compose(data, request_user):
             email.save()
 
     return {"message": "Email sent successfully."}
-
