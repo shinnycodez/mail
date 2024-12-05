@@ -68,7 +68,7 @@ class ScheduledEmail(models.Model):
             "recipients": [user.email for user in self.recipients.all()],
             "subject": self.subject,
             "body": self.body,
-            "timestamp": self.scheduled_time.strftime("%b %d %Y, %I:%M %p"),
+            "timestamp": localtime(self.scheduled_time).strftime("%b %d %Y, %I:%M %p"),
             "file": self.file,
             "cc": [user.email for user in self.cc.all()],
             "bcc": [user.email for user in self.bcc.all()],
