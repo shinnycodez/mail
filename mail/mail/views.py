@@ -42,7 +42,8 @@ def EmailComposeView(request):
         return JsonResponse(msg)
     
     msg = compose(data, request.user)
-    return JsonResponse(msg)
+    print(msg)
+    return JsonResponse(msg,status=msg.get("status"))
 
 
 

@@ -222,7 +222,7 @@ def compose(data, request_user):
     emails = [email.strip() for email in data.get("recipients").split(",")]
     if emails == [""]:
         return {
-            "error": "At least one recipient required."
+            "error": "At least one recipient required.","status" : 400
         }
 
     # Convert email addresses to users
