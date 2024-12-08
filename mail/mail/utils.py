@@ -41,7 +41,7 @@ def scheduled_compose(data, request_user):
             user = User.objects.get(id=recipient)
             recipients.append(user)
         except User.DoesNotExist:
-            return "Receipent does not exists!"
+            return {"error": "Receipent does not exists!", "status" : 400}
         
     cc_ids = [recipient['id'] for recipient in data['cc']]
     cc_recipients = []
@@ -52,7 +52,7 @@ def scheduled_compose(data, request_user):
                 cc_recipients.append(user)
             except User.DoesNotExist:
                 return {
-                    "error": f"User with email {cc_email} does not exist."
+                    "error": f"User with email {cc_email} does not exist.", "status" : 400,
                 }
     else:
         pass
@@ -67,7 +67,7 @@ def scheduled_compose(data, request_user):
                 bcc_recipients.append(user)
             except User.DoesNotExist:
                 return {
-                    "error": f"User with email {bcc_email} does not exist."
+                    "error": f"User with email {bcc_email} does not exist.", "status" : 400,
                 }
     else:
         pass
@@ -126,7 +126,7 @@ def SaveScheduledEmail(data, request_user):
     emails = [email.strip() for email in data.get("recipients").split(",")]
     if emails == [""]:
         return {
-            "error": "At least one recipient required."
+            "error": "At least one recipient required." , "status" : 400,
         }
 
     # Convert email addresses to users
@@ -137,7 +137,7 @@ def SaveScheduledEmail(data, request_user):
             recipients.append(user)
         except User.DoesNotExist:
             return {
-                "error": f"User with email {email} does not exist."
+                "error": f"User with email {email} does not exist." , "status" : 400,
             }
 
     cc_emails = [cc_email.strip() for cc_email in data.get("cc").split(",")]
@@ -149,7 +149,7 @@ def SaveScheduledEmail(data, request_user):
                 cc_recipients.append(user)
             except User.DoesNotExist:
                 return {
-                    "error": f"User with email {cc_email} does not exist."
+                    "error": f"User with email {cc_email} does not exist.", "status" : 400,
                 }
     else:
         pass
@@ -164,7 +164,7 @@ def SaveScheduledEmail(data, request_user):
                 bcc_recipients.append(user)
             except User.DoesNotExist:
                 return {
-                    "error": f"User with email {bcc_email} does not exist."
+                    "error": f"User with email {bcc_email} does not exist.", "status" : 400,
                 }
     else:
         pass
@@ -176,7 +176,7 @@ def SaveScheduledEmail(data, request_user):
     file = data.get("file", "")
     scheduled_time = data.get("scheduled_time", "")
     if scheduled_time is "":
-        return {"error": "Scheduled time not provided"}
+        return {"error": "Scheduled time not provided", "status" : 400,}
     
 
     
@@ -233,7 +233,7 @@ def compose(data, request_user):
             recipients.append(user)
         except User.DoesNotExist:
             return {
-                "error": f"User with email {email} does not exist."
+                "error": f"User with email {email} does not exist.", "status" : 400,
             }
 
     cc_emails = [cc_email.strip() for cc_email in data.get("cc").split(",")]
@@ -245,7 +245,7 @@ def compose(data, request_user):
                 cc_recipients.append(user)
             except User.DoesNotExist:
                 return {
-                    "error": f"User with email {cc_email} does not exist."
+                    "error": f"User with email {cc_email} does not exist.", "status" : 400,
                 }
     else:
         pass
@@ -260,7 +260,7 @@ def compose(data, request_user):
                 bcc_recipients.append(user)
             except User.DoesNotExist:
                 return {
-                    "error": f"User with email {bcc_email} does not exist."
+                    "error": f"User with email {bcc_email} does not exist.", "status" : 400,
                 }
     else:
         pass
