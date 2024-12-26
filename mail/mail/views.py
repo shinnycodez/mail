@@ -145,6 +145,8 @@ def login_view(request):
         return JsonResponse({"error": "Password field is null"}, status=400)
 
     user = authenticate(request, username=username, password=password)
+    if user is None:
+        return JsonResponse({"error": "Invalid credentials"}, status=400)
     print(user)
     request.user = user
 
