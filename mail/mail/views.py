@@ -135,13 +135,17 @@ def login_view(request):
 
     email = data.get("email", "")
     password = data.get("password", "")
+    print(email)
+    print(password)
+    username = email.split('@')[0]
 
     if not email:
         return JsonResponse({"error": "Email field is null"}, status=400)
     if not password:
         return JsonResponse({"error": "Password field is null"}, status=400)
 
-    user = authenticate(request, username=email, password=password)
+    user = authenticate(request, username=username, password=password)
+    print(user)
     request.user = user
 
     if user is not None:
